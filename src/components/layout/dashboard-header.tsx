@@ -51,10 +51,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("clientflow-theme");
-    const shouldUseDark =
-      storedTheme === "dark" ||
-      (!storedTheme &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const shouldUseDark = storedTheme === "dark";
 
     document.documentElement.classList.toggle("dark", shouldUseDark);
     setDarkMode(shouldUseDark);
