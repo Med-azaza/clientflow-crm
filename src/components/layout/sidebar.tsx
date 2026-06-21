@@ -13,7 +13,8 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { cn } from "@/lib/utils";
+import type { Organization, Profile, Role } from "@/lib/app-types";
+import { cn, initialsFor } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -29,9 +30,17 @@ const navItems = [
 type SidebarProps = {
   mobileOpen?: boolean;
   onClose?: () => void;
+  organization: Organization;
+  profile: Profile;
+  role: Role;
 };
 
-function SidebarContent({ onClose }: Pick<SidebarProps, "onClose">) {
+function SidebarContent({
+  onClose,
+  organization,
+  profile,
+  role,
+}: Pick<SidebarProps, "onClose" | "organization" | "profile" | "role">) {
   const pathname = usePathname();
 
   return (
@@ -84,9 +93,9 @@ function SidebarContent({ onClose }: Pick<SidebarProps, "onClose">) {
       <div className="space-y-5 border-t border-slate-200 p-5">
         <div className="rounded-2xl bg-blue-700 p-5 text-white shadow-lg shadow-blue-900/10">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">
-            Pro Plan Active
+            Workspace
           </p>
-          <p className="mt-1 font-semibold">Need more storage?</p>
+          <p className="mt-1 font-semibold">{organization.name}</p>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/20">
             <div className="h-full w-3/4 rounded-full bg-white" />
           </div>
@@ -98,10 +107,15 @@ function SidebarContent({ onClose }: Pick<SidebarProps, "onClose">) {
           </button>
         </div>
         <div className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
-          <UserAvatar initials="AD" label="Anna Dorsey" />
-          <div>
-            <p className="font-semibold text-slate-900">Anna D.</p>
-            <p className="text-sm text-slate-500">Manager</p>
+          <UserAvatar
+            initials={initialsFor(profile.fullName || profile.email)}
+            label={profile.fullName || profile.email}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-slate-900">
+              {profile.fullName || profile.email}
+            </p>
+            <p className="text-sm capitalize text-slate-500">{role}</p>
           </div>
         </div>
       </div>
@@ -109,11 +123,21 @@ function SidebarContent({ onClose }: Pick<SidebarProps, "onClose">) {
   );
 }
 
-export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
+export function Sidebar({
+  mobileOpen = false,
+  onClose,
+  organization,
+  profile,
+  role,
+}: SidebarProps) {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-slate-200 lg:block">
-        <SidebarContent />
+        <SidebarContent
+          organization={organization}
+          profile={profile}
+          role={role}
+        />
       </aside>
       <button
         aria-label="Close navigation backdrop"
@@ -130,7 +154,12 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <SidebarContent onClose={onClose} />
+        <SidebarContent
+          onClose={onClose}
+          organization={organization}
+          profile={profile}
+          role={role}
+        />
       </aside>
     </>
   );

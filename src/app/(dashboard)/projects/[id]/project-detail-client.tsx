@@ -6,93 +6,125 @@ import {
   DollarSign,
   FileText,
   HeartPulse,
+  Loader2,
   MessageSquare,
-  MoreHorizontal,
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useMemo, useState, useTransition } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MetricCard } from "@/components/ui/metric-card";
 import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { createMessageRecord, createTaskRecord } from "@/lib/actions";
 import type {
-  ActivityLog,
-  ClientFile,
-  Invoice,
+  ActivityLogRecord,
+  FileRecord,
+  InvoiceRecord,
+  MessageRecord,
+  OrganizationMember,
   Priority,
-  Project,
-  Task,
-  TeamMember,
-} from "@/lib/mock-data";
+  ProjectRecord,
+  TaskRecord,
+} from "@/lib/app-types";
 import { formatCurrency } from "@/lib/utils";
 
 const tabs = ["Overview", "Tasks", "Files", "Invoices", "Comments"] as const;
-
 type Tab = (typeof tabs)[number];
 
 type ProjectDetailClientProps = {
-  project: Project;
-  initialTasks: Task[];
-  projectFiles: ClientFile[];
-  projectInvoices: Invoice[];
-  assignees: TeamMember[];
-  teamMembers: TeamMember[];
-  activityLogs: ActivityLog[];
+  activityLogs: ActivityLogRecord[];
+  members: OrganizationMember[];
+  project: ProjectRecord;
+  projectFiles: FileRecord[];
+  projectInvoices: InvoiceRecord[];
+  projectMessages: MessageRecord[];
+  projectTasks: TaskRecord[];
 };
 
 const inputClass =
   "h-12 w-full rounded-2xl border border-slate-200 px-4 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100";
 
 export function ProjectDetailClient({
+  activityLogs,
+  members,
   project,
-  initialTasks,
   projectFiles,
   projectInvoices,
-  assignees,
-  teamMembers,
-  activityLogs,
+  projectMessages,
+  projectTasks,
 }: ProjectDetailClientProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
-  const [tasks, setTasks] = useState(initialTasks);
   const [modalOpen, setModalOpen] = useState(false);
+  const [fileModalOpen, setFileModalOpen] = useState(false);
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState([
-    "Final homepage approval checklist is ready for review.",
-    "Client asked to keep the conversion notes attached to the design file.",
-  ]);
-
-  const taskRows = activeTab === "Overview" ? tasks.slice(0, 4) : tasks;
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const taskRows =
+    activeTab === "Overview" ? projectTasks.slice(0, 4) : projectTasks;
 
   const openTasks = useMemo(
-    () => tasks.filter((task) => task.status !== "Completed").length,
-    [tasks],
+    () => projectTasks.filter((task) => task.status !== "Completed").length,
+    [projectTasks],
+  );
+  const assignees = members.filter((member) =>
+    project.assigneeIds.includes(member.userId),
   );
 
   const handleAddTask = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const title = String(formData.get("title") ?? "");
-    const priority = String(formData.get("priority") ?? "High") as Priority;
-    const assigneeId = String(formData.get("assigneeId") ?? "anna");
+    const form = event.currentTarget;
+    const payload = Object.fromEntries(new FormData(form));
 
-    setTasks((current) => [
-      {
-        id: `task-${Date.now()}`,
-        title,
-        project: project.name,
-        client: project.company,
-        assigneeId,
-        priority,
-        status: "Pending",
-        dueDate: "This week",
-      },
-      ...current,
-    ]);
-    setModalOpen(false);
-    event.currentTarget.reset();
+    startTransition(async () => {
+      const result = await createTaskRecord({
+        ...payload,
+        projectId: project.id,
+      });
+
+      if (!result.ok) {
+        setFeedback(result.error ?? "Unable to create task.");
+        return;
+      }
+
+      setFeedback(result.message ?? "Task saved.");
+      setModalOpen(false);
+      form.reset();
+      router.refresh();
+    });
+  };
+
+  const handleUpload = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("projectId", project.id);
+    formData.set("clientId", project.clientId ?? "");
+
+    startTransition(async () => {
+      const response = await fetch("/api/files/upload", {
+        body: formData,
+        method: "POST",
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        ok?: boolean;
+      };
+
+      if (!response.ok || !result.ok) {
+        setFeedback(result.error ?? "Unable to upload file.");
+        return;
+      }
+
+      setFeedback("File uploaded.");
+      setFileModalOpen(false);
+      form.reset();
+      router.refresh();
+    });
   };
 
   const handleComment = (event: FormEvent<HTMLFormElement>) => {
@@ -103,17 +135,30 @@ export function ProjectDetailClient({
       return;
     }
 
-    setComments((current) => [trimmed, ...current]);
-    setComment("");
+    startTransition(async () => {
+      const result = await createMessageRecord({
+        body: trimmed,
+        clientId: project.clientId ?? "",
+        projectId: project.id,
+      });
+
+      if (!result.ok) {
+        setFeedback(result.error ?? "Unable to add comment.");
+        return;
+      }
+
+      setComment("");
+      router.refresh();
+    });
   };
 
   const taskTable = (
     <DataTable
       columns={[
         {
-          key: "task",
-          header: "Task",
           className: "min-w-64",
+          header: "Task",
+          key: "task",
           render: (task) => (
             <div>
               <p className="font-semibold text-slate-950">{task.title}</p>
@@ -122,53 +167,31 @@ export function ProjectDetailClient({
           ),
         },
         {
-          key: "assignee",
-          header: "Assignee",
           className: "whitespace-nowrap",
-          render: (task) => {
-            const member = teamMembers.find(
-              (item) => item.id === task.assigneeId,
-            );
-
-            return member ? (
-              <div className="flex items-center gap-3">
-                <UserAvatar
-                  className="size-8 text-xs"
-                  initials={member.initials}
-                  label={member.name}
-                />
-                {member.name}
-              </div>
-            ) : (
-              "Unassigned"
-            );
-          },
+          header: "Assignee",
+          key: "assignee",
+          render: (task) => (
+            <div className="flex items-center gap-3">
+              <UserAvatar
+                className="size-8 text-xs"
+                initials={task.assigneeInitials}
+                label={task.assigneeName}
+              />
+              {task.assigneeName}
+            </div>
+          ),
         },
         {
-          key: "priority",
-          header: "Priority",
           className: "whitespace-nowrap",
+          header: "Priority",
+          key: "priority",
           render: (task) => <StatusBadge>{task.priority}</StatusBadge>,
         },
         {
-          key: "status",
-          header: "Status",
           className: "whitespace-nowrap",
+          header: "Status",
+          key: "status",
           render: (task) => <StatusBadge>{task.status}</StatusBadge>,
-        },
-        {
-          key: "actions",
-          header: "",
-          className: "w-16 text-right",
-          render: (task) => (
-            <button
-              aria-label={`Open ${task.title} actions`}
-              className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              type="button"
-            >
-              <MoreHorizontal className="size-4" />
-            </button>
-          ),
         },
       ]}
       data={taskRows}
@@ -185,7 +208,7 @@ export function ProjectDetailClient({
           type="button"
         >
           <Plus className="size-5" />
-          Add New Task to Sprint
+          Add New Task
         </button>
       }
       minWidth="min-w-[760px]"
@@ -209,9 +232,10 @@ export function ProjectDetailClient({
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
             className="rounded-2xl border border-slate-200 bg-white px-5 py-3 font-semibold text-slate-900 shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+            onClick={() => setFileModalOpen(true)}
             type="button"
           >
-            Edit Details
+            Upload File
           </button>
           <button
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-800"
@@ -224,34 +248,40 @@ export function ProjectDetailClient({
         </div>
       </div>
 
+      {feedback ? (
+        <p className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+          {feedback}
+        </p>
+      ) : null}
+
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           detail={`${formatCurrency(project.budgetUsed)} / ${formatCurrency(project.budget)}`}
           icon={DollarSign}
           label="Budget Used"
           tone="blue"
-          value={`${Math.round((project.budgetUsed / project.budget) * 100)}%`}
+          value={`${project.budget ? Math.round((project.budgetUsed / project.budget) * 100) : 0}%`}
         />
         <MetricCard
-          detail={`Due on ${project.dueDate}, 2026`}
+          detail={project.dueDate}
           icon={CalendarDays}
           label="Deadline"
           tone="red"
-          value="12 Days"
+          value={project.dueDate}
         />
         <MetricCard
-          detail={`${openTasks} open / ${tasks.length} total`}
+          detail={`${openTasks} open / ${projectTasks.length} total`}
           icon={CheckCircle2}
           label="Open Tasks"
           tone="amber"
           value={String(openTasks)}
         />
         <MetricCard
-          detail="Ahead of schedule"
+          detail={`${project.progress}% complete`}
           icon={HeartPulse}
-          label="Team Health"
+          label="Project Health"
           tone="green"
-          value="Strong"
+          value={project.progress >= 75 ? "Strong" : "Watch"}
         />
       </div>
 
@@ -283,7 +313,6 @@ export function ProjectDetailClient({
                   <h2 className="text-2xl font-bold text-slate-950">
                     Current Sprint
                   </h2>
-                  <span className="text-slate-500">S2 - Wave 1</span>
                 </div>
                 <Link className="font-semibold text-blue-700" href="/tasks">
                   View All Tasks
@@ -291,22 +320,7 @@ export function ProjectDetailClient({
               </div>
               {taskTable}
             </div>
-
-            <section className="card bg-slate-100 p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-bold text-slate-950">Project Note</h2>
-                <button className="font-semibold text-blue-700" type="button">
-                  Edit
-                </button>
-              </div>
-              <div className="rounded-2xl bg-white p-6 leading-7 text-slate-700">
-                The client requested a sharper conversion story for the services
-                section. Keep two homepage variations ready for Wednesday&apos;s
-                review.
-              </div>
-            </section>
           </section>
-
           <ProjectSidebar
             activityLogs={activityLogs}
             assignees={assignees}
@@ -315,30 +329,14 @@ export function ProjectDetailClient({
         </div>
       ) : null}
 
-      {activeTab === "Tasks" ? (
-        <section className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-2xl font-bold text-slate-950">Project Tasks</h2>
-            <button
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 font-semibold text-white"
-              onClick={() => setModalOpen(true)}
-              type="button"
-            >
-              <Plus className="size-5" />
-              Add Task
-            </button>
-          </div>
-          {taskTable}
-        </section>
-      ) : null}
-
+      {activeTab === "Tasks" ? taskTable : null}
       {activeTab === "Files" ? (
         <DataTable
           columns={[
             {
-              key: "file",
-              header: "File",
               className: "min-w-64",
+              header: "File",
+              key: "file",
               render: (file) => (
                 <div>
                   <p className="font-semibold text-slate-950">{file.name}</p>
@@ -349,55 +347,48 @@ export function ProjectDetailClient({
               ),
             },
             {
-              key: "uploaded",
               header: "Uploaded by",
+              key: "uploaded",
               render: (file) => file.uploadedBy,
             },
+            { header: "Date", key: "date", render: (file) => file.date },
             {
-              key: "date",
-              header: "Date",
-              className: "whitespace-nowrap",
-              render: (file) => file.date,
-            },
-            {
-              key: "status",
               header: "Status",
-              className: "whitespace-nowrap",
+              key: "status",
               render: (file) => <StatusBadge>{file.status}</StatusBadge>,
             },
           ]}
           data={projectFiles}
           emptyState={
             <EmptyState
-              description="Shared project files will appear here."
+              description="Upload a file to share project assets."
               icon={FileText}
               title="No files uploaded"
             />
           }
         />
       ) : null}
-
       {activeTab === "Invoices" ? (
         <DataTable
           columns={[
             {
-              key: "invoice",
               header: "Invoice",
-              render: (invoice) => invoice.id,
+              key: "invoice",
+              render: (invoice) => invoice.invoiceNumber,
             },
             {
-              key: "amount",
               header: "Amount",
+              key: "amount",
               render: (invoice) => formatCurrency(invoice.amount),
             },
             {
-              key: "due",
               header: "Due date",
+              key: "due",
               render: (invoice) => invoice.dueDate,
             },
             {
-              key: "status",
               header: "Status",
+              key: "status",
               render: (invoice) => <StatusBadge>{invoice.status}</StatusBadge>,
             },
           ]}
@@ -410,7 +401,6 @@ export function ProjectDetailClient({
           }
         />
       ) : null}
-
       {activeTab === "Comments" ? (
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="card p-6">
@@ -426,18 +416,19 @@ export function ProjectDetailClient({
               />
               <button
                 aria-label="Add comment"
-                className="rounded-2xl bg-blue-700 p-3 text-white"
+                className="rounded-2xl bg-blue-700 p-3 text-white disabled:bg-slate-300"
+                disabled={isPending || !comment.trim()}
                 type="submit"
               >
                 <MessageSquare className="size-5" />
               </button>
             </form>
             <div className="mt-6 space-y-4">
-              {comments.map((item) => (
-                <div className="rounded-2xl bg-slate-50 p-4" key={item}>
-                  <p className="text-slate-700">{item}</p>
+              {projectMessages.map((item) => (
+                <div className="rounded-2xl bg-slate-50 p-4" key={item.id}>
+                  <p className="text-slate-700">{item.body}</p>
                   <p className="mt-2 text-xs font-medium text-slate-400">
-                    Just now
+                    {item.time}
                   </p>
                 </div>
               ))}
@@ -452,7 +443,7 @@ export function ProjectDetailClient({
       ) : null}
 
       <Modal
-        description="Create a local task for this project demo."
+        description="Create a task for this project."
         onClose={() => setModalOpen(false)}
         open={modalOpen}
         title="Add Task"
@@ -470,8 +461,9 @@ export function ProjectDetailClient({
                 Assignee
               </span>
               <select className={inputClass} name="assigneeId">
-                {teamMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
+                <option value="">Unassigned</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
                     {member.name}
                   </option>
                 ))}
@@ -482,10 +474,11 @@ export function ProjectDetailClient({
                 Priority
               </span>
               <select className={inputClass} name="priority">
-                <option>High</option>
-                <option>Urgent</option>
-                <option>Medium</option>
-                <option>Low</option>
+                {(["High", "Urgent", "Medium", "Low"] as Priority[]).map(
+                  (priority) => (
+                    <option key={priority}>{priority}</option>
+                  ),
+                )}
               </select>
             </label>
           </div>
@@ -498,12 +491,47 @@ export function ProjectDetailClient({
               Cancel
             </button>
             <button
-              className="rounded-2xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:bg-slate-300"
+              disabled={isPending}
               type="submit"
             >
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
               Add Task
             </button>
           </div>
+        </form>
+      </Modal>
+
+      <Modal
+        description="Upload a file to this project."
+        onClose={() => setFileModalOpen(false)}
+        open={fileModalOpen}
+        title="Upload File"
+      >
+        <form className="space-y-4" onSubmit={handleUpload}>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-slate-700">
+              Display name
+            </span>
+            <input className={inputClass} name="name" />
+          </label>
+          <input className={inputClass} name="file" required type="file" />
+          <label className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 font-semibold text-slate-700">
+            <input
+              className="size-5 accent-blue-700"
+              name="sharedWithClient"
+              type="checkbox"
+            />
+            Shared with client
+          </label>
+          <button
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:bg-slate-300"
+            disabled={isPending}
+            type="submit"
+          >
+            {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+            Upload File
+          </button>
         </form>
       </Modal>
     </>
@@ -515,8 +543,8 @@ function ProjectSidebar({
   assignees,
   fileCount,
 }: {
-  activityLogs: ActivityLog[];
-  assignees: TeamMember[];
+  activityLogs: ActivityLogRecord[];
+  assignees: OrganizationMember[];
   fileCount: number;
 }) {
   return (
@@ -524,7 +552,7 @@ function ProjectSidebar({
       <section className="card p-6">
         <h2 className="text-2xl font-bold text-slate-950">Recent Activity</h2>
         <div className="mt-6 space-y-6 border-l border-slate-200 pl-6">
-          {activityLogs.map((event) => (
+          {activityLogs.slice(0, 5).map((event) => (
             <div className="relative" key={event.id}>
               <span className="-left-[31px] absolute top-1 flex size-3 rounded-full bg-blue-700 ring-4 ring-blue-100" />
               <p className="font-semibold text-slate-950">{event.title}</p>

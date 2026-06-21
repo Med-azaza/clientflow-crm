@@ -7,17 +7,17 @@ import {
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import type { Project } from "@/lib/mock-data";
-import { teamMembers } from "@/lib/mock-data";
+import type { OrganizationMember, ProjectRecord } from "@/lib/app-types";
 import { formatCurrency } from "@/lib/utils";
 
 type ProjectCardProps = {
-  project: Project;
+  members: OrganizationMember[];
+  project: ProjectRecord;
 };
 
-export function ProjectCard({ project }: ProjectCardProps) {
-  const assignees = teamMembers.filter((member) =>
-    project.assigneeIds.includes(member.id),
+export function ProjectCard({ members, project }: ProjectCardProps) {
+  const assignees = members.filter((member) =>
+    project.assigneeIds.includes(member.userId),
   );
 
   return (

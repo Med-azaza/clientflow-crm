@@ -1,10 +1,12 @@
 "use client";
 
-import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
+import { Bell, LogOut, Menu, Moon, Search, Sun } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { cn } from "@/lib/utils";
+import type { Profile, Role } from "@/lib/app-types";
+import { signOut } from "@/lib/auth-actions";
+import { cn, initialsFor } from "@/lib/utils";
 
 const placeholders: Record<string, string> = {
   "/dashboard": "Search clients, projects, or files...",
@@ -19,6 +21,8 @@ const placeholders: Record<string, string> = {
 
 type DashboardHeaderProps = {
   onMenuClick: () => void;
+  profile: Profile;
+  role: Role;
 };
 
 const notifications = [
@@ -42,7 +46,11 @@ const notifications = [
   },
 ];
 
-export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+export function DashboardHeader({
+  onMenuClick,
+  profile,
+  role,
+}: DashboardHeaderProps) {
   const pathname = usePathname();
   const basePath = `/${pathname.split("/")[1] || "dashboard"}`;
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -182,12 +190,27 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         <div className="hidden h-8 w-px bg-slate-200 sm:block" />
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">
-            <p className="text-sm font-semibold text-slate-950">Anna D.</p>
+            <p className="max-w-36 truncate text-sm font-semibold text-slate-950">
+              {profile.fullName || profile.email}
+            </p>
             <p className="text-xs uppercase tracking-[0.08em] text-slate-500">
-              Manager
+              {role}
             </p>
           </div>
-          <UserAvatar initials="AD" label="Anna Dorsey" className="size-11" />
+          <UserAvatar
+            className="size-11"
+            initials={initialsFor(profile.fullName || profile.email)}
+            label={profile.fullName || profile.email}
+          />
+          <form action={signOut}>
+            <button
+              aria-label="Sign out"
+              className="rounded-xl p-2 text-slate-700 transition hover:bg-white hover:text-blue-700"
+              type="submit"
+            >
+              <LogOut className="size-5" />
+            </button>
+          </form>
         </div>
       </div>
     </header>

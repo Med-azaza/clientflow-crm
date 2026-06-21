@@ -1,8 +1,24 @@
-import { ArrowUpRight } from "lucide-react";
+import {
+  ArrowUpRight,
+  BarChart3,
+  FileText,
+  type LucideIcon,
+  MessageSquareText,
+} from "lucide-react";
 import { ActionCard } from "@/components/ui/action-card";
-import { actionQueue } from "@/lib/mock-data";
+import type { ActionQueueItem, DashboardIconName } from "@/lib/app-types";
 
-export function ActionQueue() {
+const iconMap: Partial<Record<DashboardIconName, LucideIcon>> = {
+  "bar-chart": BarChart3,
+  "file-text": FileText,
+  "message-square-text": MessageSquareText,
+};
+
+type ActionQueueProps = {
+  items: ActionQueueItem[];
+};
+
+export function ActionQueue({ items }: ActionQueueProps) {
   return (
     <section className="overflow-hidden rounded-[24px] bg-blue-700 p-6 text-white shadow-xl shadow-blue-900/15">
       <div className="flex items-center justify-between">
@@ -10,10 +26,10 @@ export function ActionQueue() {
         <ArrowUpRight className="size-6" />
       </div>
       <div className="mt-6 space-y-4">
-        {actionQueue.map((item) => (
+        {items.map((item) => (
           <ActionCard
             detail={item.detail}
-            icon={item.icon}
+            icon={iconMap[item.icon] ?? FileText}
             key={item.id}
             title={item.title}
           />

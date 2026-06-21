@@ -1,4 +1,4 @@
-import type { Priority, Status } from "@/lib/mock-data";
+import type { Priority, Status } from "@/lib/app-types";
 import { cn } from "@/lib/utils";
 
 type StatusBadgeProps = {

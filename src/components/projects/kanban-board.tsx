@@ -1,15 +1,21 @@
 import { Plus } from "lucide-react";
 import { ProjectCard } from "@/components/projects/project-card";
-import type { Project } from "@/lib/mock-data";
+import type { OrganizationMember, ProjectRecord } from "@/lib/app-types";
 
-const columns: Array<Project["column"]> = [
+const columns: Array<ProjectRecord["column"]> = [
   "Planning",
   "In Progress",
   "Review",
   "Completed",
 ];
 
-export function KanbanBoard({ projects }: { projects: Project[] }) {
+export function KanbanBoard({
+  members,
+  projects,
+}: {
+  members: OrganizationMember[];
+  projects: ProjectRecord[];
+}) {
   return (
     <div className="grid gap-6 xl:grid-cols-4">
       {columns.map((column) => {
@@ -37,7 +43,11 @@ export function KanbanBoard({ projects }: { projects: Project[] }) {
             </div>
             <div className="space-y-5">
               {items.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard
+                  key={project.id}
+                  members={members}
+                  project={project}
+                />
               ))}
             </div>
           </section>

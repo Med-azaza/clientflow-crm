@@ -1,8 +1,14 @@
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { activityLogs, clients } from "@/lib/mock-data";
+import type { ActivityLogRecord, ClientRecord } from "@/lib/app-types";
 import { formatCurrency } from "@/lib/utils";
 
-export function ClientHealthPanel() {
+export function ClientHealthPanel({
+  activityLogs,
+  clients,
+}: {
+  activityLogs: ActivityLogRecord[];
+  clients: ClientRecord[];
+}) {
   return (
     <aside className="space-y-6">
       <section className="card p-6">
