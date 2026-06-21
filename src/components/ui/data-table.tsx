@@ -14,6 +14,7 @@ type DataTableProps<T extends { id: string }> = {
   footer?: ReactNode;
   emptyState?: ReactNode;
   minWidth?: string;
+  roundedTop?: boolean;
 };
 
 export function DataTable<T extends { id: string }>({
@@ -22,9 +23,15 @@ export function DataTable<T extends { id: string }>({
   footer,
   emptyState,
   minWidth = "min-w-[760px]",
+  roundedTop = true,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
+    <div
+      className={cn(
+        "overflow-hidden border border-slate-200 bg-white shadow-sm",
+        roundedTop ? "rounded-[20px]" : "rounded-b-[20px]",
+      )}
+    >
       <div className="overflow-x-auto">
         <table className={cn("w-full border-collapse text-left", minWidth)}>
           <thead className="bg-slate-50">

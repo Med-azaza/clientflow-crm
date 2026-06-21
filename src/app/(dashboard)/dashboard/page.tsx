@@ -229,6 +229,7 @@ export default function DashboardPage() {
                   title="No projects found"
                 />
               }
+              roundedTop={false}
             />
           </div>
         </section>
