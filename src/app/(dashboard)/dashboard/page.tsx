@@ -109,6 +109,7 @@ export default function DashboardPage() {
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {dashboardHighlights.map((item) => (
           <MetricCard
+            href={item.href}
             icon={item.icon}
             key={item.label}
             label={item.label}

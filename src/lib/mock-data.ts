@@ -579,8 +579,32 @@ export const fileTypeIcons = {
 };
 
 export const dashboardHighlights = [
-  { label: "Active Clients", value: "12", icon: CheckCircle2, tone: "green" },
-  { label: "Active Projects", value: "8", icon: FolderKanban, tone: "blue" },
-  { label: "Tasks Due", value: "5", icon: Clock3, tone: "amber" },
-  { label: "Unpaid Invoices", value: "$4.2k", icon: Archive, tone: "red" },
+  {
+    label: "Active Clients",
+    value: "12",
+    icon: CheckCircle2,
+    tone: "green",
+    href: "/clients",
+  },
+  {
+    label: "Active Projects",
+    value: "8",
+    icon: FolderKanban,
+    tone: "blue",
+    href: "/projects",
+  },
+  {
+    label: "Tasks Due",
+    value: "5",
+    icon: Clock3,
+    tone: "amber",
+    href: "/tasks",
+  },
+  {
+    label: "Unpaid Invoices",
+    value: "$4.2k",
+    icon: Archive,
+    tone: "red",
+    href: "/invoices",
+  },
 ] as const;
