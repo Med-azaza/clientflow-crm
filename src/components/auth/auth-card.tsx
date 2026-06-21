@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
 import {
   requestPasswordReset,
+  signInWithDemoAccount,
   signInWithGoogle,
   signInWithPassword,
   signUpWithPassword,
@@ -72,6 +73,7 @@ export function AuthCard({ mode }: AuthCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [isDemoPending, startDemoTransition] = useTransition();
   const [feedback, setFeedback] = useState<{
     tone: "error" | "success";
     message: string;
@@ -82,6 +84,7 @@ export function AuthCard({ mode }: AuthCardProps) {
   );
 
   const details = copy[mode];
+  const isAuthBusy = isPending || isDemoPending;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,6 +111,32 @@ export function AuthCard({ mode }: AuthCardProps) {
 
       setFeedback({
         message: result.message ?? "Success.",
+        tone: "success",
+      });
+
+      if (result.redirectTo) {
+        router.push(result.redirectTo);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleDemoLogin = () => {
+    setFeedback(null);
+
+    startDemoTransition(async () => {
+      const result = await signInWithDemoAccount();
+
+      if (!result.ok) {
+        setFeedback({
+          message: result.error ?? "Unable to open the demo workspace.",
+          tone: "error",
+        });
+        return;
+      }
+
+      setFeedback({
+        message: result.message ?? "Opening demo workspace.",
         tone: "success",
       });
 
@@ -169,12 +198,26 @@ export function AuthCard({ mode }: AuthCardProps) {
                   <form action={signInWithGoogle} className="mt-8">
                     <button
                       className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white font-semibold text-slate-800 transition hover:border-blue-200 hover:text-blue-700"
+                      disabled={isAuthBusy}
                       type="submit"
                     >
                       <GoogleIcon />
                       Continue with Google
                     </button>
                   </form>
+                  <button
+                    className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                    disabled={isAuthBusy}
+                    onClick={handleDemoLogin}
+                    type="button"
+                  >
+                    {isDemoPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="size-4" />
+                    )}
+                    View demo workspace
+                  </button>
                   <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                     <span className="h-px flex-1 bg-slate-200" />
                     or
@@ -221,12 +264,16 @@ export function AuthCard({ mode }: AuthCardProps) {
                 )}
                 {feedback ? (
                   <div
+                    aria-live={
+                      feedback.tone === "error" ? "assertive" : "polite"
+                    }
                     className={cn(
                       "rounded-2xl px-4 py-3 text-sm font-semibold",
                       feedback.tone === "error"
                         ? "bg-rose-50 text-rose-700"
                         : "bg-emerald-50 text-emerald-700",
                     )}
+                    role={feedback.tone === "error" ? "alert" : "status"}
                   >
                     {feedback.message}
                   </div>
@@ -234,7 +281,7 @@ export function AuthCard({ mode }: AuthCardProps) {
                 <div className="pt-2">
                   <button
                     className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 font-semibold text-white shadow-lg shadow-blue-900/15 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-                    disabled={isPending}
+                    disabled={isAuthBusy}
                     type="submit"
                   >
                     {isPending ? (

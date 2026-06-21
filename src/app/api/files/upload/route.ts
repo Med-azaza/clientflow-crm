@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
 import { getCurrentContext } from "@/lib/data";
+import { isDemoEmail } from "@/lib/demo-workspace";
 
 function safeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-|-$/g, "");
 }
 
 export async function POST(request: Request) {
-  const { organization, role, supabase, userId } = await getCurrentContext();
+  const { organization, profile, role, supabase, userId } =
+    await getCurrentContext();
 
   if (role === "client") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (isDemoEmail(profile.email)) {
+    return NextResponse.json(
+      { error: "Demo workspace file uploads are disabled." },
+      { status: 403 },
+    );
   }
 
   const formData = await request.formData();

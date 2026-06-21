@@ -33,9 +33,15 @@ Create `.env.local`:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+DEMO_EMAIL=demo@clientflow.app
+DEMO_PASSWORD=your-demo-password
 ```
 
 Do not expose service role or secret keys in the browser. This app uses only the public publishable key and relies on Supabase Auth + RLS.
+
+## Demo Access
+
+The app includes a demo workspace for portfolio review. Configure `DEMO_EMAIL` and `DEMO_PASSWORD` in the environment, create the matching Supabase Auth user manually, and click `View demo workspace` from the login or signup page.
 
 ## Supabase Setup
 

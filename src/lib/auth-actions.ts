@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { ensureDemoWorkspace, getDemoCredentials } from "@/lib/demo-workspace";
 import { createClient } from "@/lib/supabase/server";
 
 type AuthResult = {
@@ -59,14 +60,72 @@ export async function signInWithPassword(input: unknown): Promise<AuthResult> {
   try {
     const values = loginSchema.parse(input);
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword(values);
+    const { data, error } = await supabase.auth.signInWithPassword(values);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    await supabase.rpc("ensure_user_workspace");
+    const { data: organizationId, error: workspaceError } = await supabase.rpc(
+      "ensure_user_workspace",
+    );
+
+    if (workspaceError) {
+      throw new Error(workspaceError.message);
+    }
+
+    if (data.user?.id) {
+      await ensureDemoWorkspace({
+        email: data.user.email ?? values.email,
+        organizationId,
+        supabase,
+        userId: data.user.id,
+      });
+    }
+
     return { message: "Signed in.", ok: true, redirectTo: "/dashboard" };
+  } catch (error) {
+    return authError(error);
+  }
+}
+
+export async function signInWithDemoAccount(): Promise<AuthResult> {
+  try {
+    const credentials = getDemoCredentials();
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
+
+    if (error) {
+      throw new Error("Demo access is unavailable right now.");
+    }
+
+    const userId = data.user?.id;
+    const email = data.user?.email ?? credentials.email;
+
+    if (!userId) {
+      throw new Error("Demo access is unavailable right now.");
+    }
+
+    const { data: organizationId, error: workspaceError } = await supabase.rpc(
+      "ensure_user_workspace",
+    );
+
+    if (workspaceError) {
+      throw new Error("Unable to prepare the demo workspace.");
+    }
+
+    await ensureDemoWorkspace({
+      email,
+      organizationId,
+      supabase,
+      userId,
+    });
+
+    return {
+      message: "Opening demo workspace.",
+      ok: true,
+      redirectTo: "/dashboard",
+    };
   } catch (error) {
     return authError(error);
   }

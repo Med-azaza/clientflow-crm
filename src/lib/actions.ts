@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { Role } from "@/lib/app-types";
 import { getCurrentContext } from "@/lib/data";
+import { assertNotDemoEmail } from "@/lib/demo-workspace";
 
 type ActionResult = {
   ok: boolean;
@@ -219,8 +220,9 @@ export async function updateClientRecord(
 
 export async function deleteClientRecord(id: string): Promise<ActionResult> {
   try {
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
     assertCanManage(role);
+    assertNotDemoEmail(profile.email);
 
     const { error } = await supabase
       .from("clients")
@@ -336,8 +338,9 @@ export async function updateProjectRecord(
 
 export async function deleteProjectRecord(id: string): Promise<ActionResult> {
   try {
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
     assertCanManage(role);
+    assertNotDemoEmail(profile.email);
 
     const { error } = await supabase
       .from("projects")
@@ -444,8 +447,9 @@ export async function updateTaskRecord(input: unknown): Promise<ActionResult> {
 
 export async function deleteTaskRecord(id: string): Promise<ActionResult> {
   try {
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
     assertCanManage(role);
+    assertNotDemoEmail(profile.email);
 
     const { error } = await supabase
       .from("tasks")
@@ -578,8 +582,9 @@ export async function markInvoicePaid(id: string): Promise<ActionResult> {
 
 export async function deleteInvoiceRecord(id: string): Promise<ActionResult> {
   try {
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
     assertCanManage(role);
+    assertNotDemoEmail(profile.email);
 
     const { error } = await supabase
       .from("invoices")
@@ -678,8 +683,9 @@ export async function toggleFileSharing(id: string): Promise<ActionResult> {
 
 export async function deleteFileRecord(id: string): Promise<ActionResult> {
   try {
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
     assertCanManage(role);
+    assertNotDemoEmail(profile.email);
     const fileId = z.string().uuid().parse(id);
     const { data: file, error: fetchError } = await supabase
       .from("files")
@@ -720,7 +726,8 @@ export async function updateOrganization(
 ): Promise<ActionResult> {
   try {
     const values = organizationSchema.parse(input);
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
+    assertNotDemoEmail(profile.email);
 
     if (!["owner", "admin"].includes(role)) {
       throw new Error(
@@ -769,7 +776,8 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
 export async function updateMemberRole(input: unknown): Promise<ActionResult> {
   try {
     const values = memberSchema.parse(input);
-    const { organization, role, supabase } = await getCurrentContext();
+    const { organization, profile, role, supabase } = await getCurrentContext();
+    assertNotDemoEmail(profile.email);
 
     if (!["owner", "admin"].includes(role)) {
       throw new Error("Only owners and admins can update member roles.");

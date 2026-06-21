@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { getCurrentContext } from "@/lib/data";
+import { isDemoEmail } from "@/lib/demo-workspace";
 
 export default async function DashboardLayout({
   children,
@@ -10,7 +11,12 @@ export default async function DashboardLayout({
   const { organization, profile, role } = await getCurrentContext();
 
   return (
-    <DashboardShell organization={organization} profile={profile} role={role}>
+    <DashboardShell
+      isDemoWorkspace={isDemoEmail(profile.email)}
+      organization={organization}
+      profile={profile}
+      role={role}
+    >
       {children}
     </DashboardShell>
   );
