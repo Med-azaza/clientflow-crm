@@ -24,16 +24,16 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const basePath = `/${pathname.split("/")[1] || "dashboard"}`;
 
   return (
-    <header className="sticky top-0 z-20 flex h-20 items-center gap-4 border-b border-slate-200 bg-[var(--app-bg)]/95 px-4 backdrop-blur lg:px-8">
+    <header className="sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b border-slate-200 bg-[var(--app-bg)]/95 px-4 py-3 backdrop-blur sm:gap-4 lg:min-h-20 lg:px-8">
       <button
         aria-label="Open navigation"
-        className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm lg:hidden"
+        className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 lg:hidden"
         onClick={onMenuClick}
         type="button"
       >
         <Menu className="size-5" />
       </button>
-      <div className="relative hidden w-full max-w-md sm:block">
+      <div className="relative hidden w-full max-w-md md:block">
         <Search className="-translate-y-1/2 absolute top-1/2 left-4 size-5 text-slate-400" />
         <input
           className="h-12 w-full rounded-2xl border border-slate-200 bg-white/80 pr-4 pl-12 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-100"
@@ -44,7 +44,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
       <div className="ml-auto flex items-center gap-3">
         <button
           aria-label="Notifications"
-          className="relative rounded-xl p-2 text-slate-700 hover:bg-white"
+          className="relative rounded-xl p-2 text-slate-700 transition hover:bg-white hover:text-blue-700"
           type="button"
         >
           <Bell className="size-5" />
@@ -52,7 +52,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         </button>
         <button
           aria-label="Theme"
-          className="rounded-xl p-2 text-slate-700 hover:bg-white"
+          className="rounded-xl p-2 text-slate-700 transition hover:bg-white hover:text-blue-700"
           type="button"
         >
           <Moon className="size-5" />

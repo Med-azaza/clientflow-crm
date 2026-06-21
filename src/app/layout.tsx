@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ClientFlow CRM",
   description:
-    "Client portal and project management dashboard for service teams.",
+    "A SaaS client portal and project management dashboard for agencies and freelancers.",
 };
 
 export default function RootLayout({

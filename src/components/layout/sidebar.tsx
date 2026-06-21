@@ -45,7 +45,7 @@ function SidebarContent({ onClose }: Pick<SidebarProps, "onClose">) {
         </Link>
         <button
           aria-label="Close navigation"
-          className="rounded-full p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+          className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
           onClick={onClose}
           type="button"
         >
@@ -91,7 +91,7 @@ function SidebarContent({ onClose }: Pick<SidebarProps, "onClose">) {
             <div className="h-full w-3/4 rounded-full bg-white" />
           </div>
           <button
-            className="mt-4 w-full rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700"
+            className="mt-4 w-full rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
             type="button"
           >
             Upgrade Plan

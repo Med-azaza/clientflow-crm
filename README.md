@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClientFlow CRM
 
-## Getting Started
+ClientFlow CRM is a polished mock SaaS dashboard for agencies and freelancers. It presents a realistic client portal and project management workspace using local mock data only.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Biome
+- lucide-react icons
+
+## Features
+
+- Fixed desktop sidebar with mobile drawer navigation
+- Dashboard metrics, action queue, team workload, and recent projects
+- Client search, filtering, sorting, and demo client creation
+- Project Kanban/List views, filters, and project detail tabs
+- Task, invoice, file, message, and settings demo interactions
+- Empty states, hover states, responsive cards, and scroll-safe tables
+- Static/mock-data implementation ready for portfolio deployment
+
+## Routes
+
+- `/` redirects to `/dashboard`
+- `/dashboard`
+- `/clients`
+- `/projects`
+- `/projects/website-redesign`
+- `/tasks`
+- `/invoices`
+- `/files`
+- `/messages`
+- `/settings`
+
+## Local Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run checks:
+
+```bash
+npx tsc --noEmit
+npm run lint
+npm run build
+```
+
+Run locally when needed:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This project is ready to deploy on Vercel as a standard Next.js app. No environment variables are required for the current portfolio demo.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Demo Status
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ClientFlow CRM intentionally uses mock data and local React state. Supabase, authentication, billing, and persistent backend workflows are not connected in this version.

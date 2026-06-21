@@ -12,17 +12,21 @@ type DataTableProps<T extends { id: string }> = {
   columns: Array<Column<T>>;
   data: T[];
   footer?: ReactNode;
+  emptyState?: ReactNode;
+  minWidth?: string;
 };
 
 export function DataTable<T extends { id: string }>({
   columns,
   data,
   footer,
+  emptyState,
+  minWidth = "min-w-[760px]",
 }: DataTableProps<T>) {
   return (
     <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-left">
+        <table className={cn("w-full border-collapse text-left", minWidth)}>
           <thead className="bg-slate-50">
             <tr>
               {columns.map((column) => (
@@ -39,24 +43,32 @@ export function DataTable<T extends { id: string }>({
             </tr>
           </thead>
           <tbody>
-            {data.map((item) => (
-              <tr
-                className="border-b border-slate-100 last:border-b-0"
-                key={item.id}
-              >
-                {columns.map((column) => (
-                  <td
-                    className={cn(
-                      "whitespace-nowrap px-6 py-5 text-sm text-slate-700",
-                      column.className,
-                    )}
-                    key={column.key}
-                  >
-                    {column.render(item)}
-                  </td>
-                ))}
+            {data.length > 0 ? (
+              data.map((item) => (
+                <tr
+                  className="border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50"
+                  key={item.id}
+                >
+                  {columns.map((column) => (
+                    <td
+                      className={cn(
+                        "px-6 py-5 text-sm text-slate-700",
+                        column.className,
+                      )}
+                      key={column.key}
+                    >
+                      {column.render(item)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td className="p-6" colSpan={columns.length}>
+                  {emptyState}
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
